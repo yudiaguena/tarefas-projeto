@@ -23,6 +23,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var todoList : LiveData<List<ToDoEntity>>
 
 
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -36,14 +41,14 @@ class MainActivity : AppCompatActivity() {
         val appDatabase :AppDatabase = Room.databaseBuilder(this,AppDatabase::class.java,"mydb")
             .allowMainThreadQueries()
             .build()//ROOM
-
     }
+
 
     private fun insertListeners() {
         binding.fab.setOnClickListener {
             startActivityForResult(Intent(this, AddTaskActivity::class.java), CREATE_NEW_TASK)
-
         }
+
 
         adapter.listenerEdit = {
             val intent = Intent(this, AddTaskActivity::class.java)
@@ -56,6 +61,8 @@ class MainActivity : AppCompatActivity() {
             updateList()
         }
     }
+
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)

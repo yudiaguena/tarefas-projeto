@@ -44,6 +44,11 @@ class AddTaskActivity : AppCompatActivity() {
             }
         }
 
+        toolbar.setOnClickListener() {
+            intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }
+
         insertListeners()
     }
 

@@ -6,12 +6,11 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import br.com.dio.todolist.database.AppDatabase
-import br.com.dio.todolist.database.TaskEntity
 import br.com.dio.todolist.database.TaskRepository
 import br.com.dio.todolist.databinding.ActivityAddTaskBinding
-import br.com.dio.todolist.datasource.TaskDataSource
 import br.com.dio.todolist.extensions.format
 import br.com.dio.todolist.extensions.text
+import br.com.dio.todolist.extensions.toEntity
 import br.com.dio.todolist.model.Task
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -19,13 +18,14 @@ import com.google.android.material.timepicker.TimeFormat
 import kotlinx.android.synthetic.main.activity_add_task.*
 import kotlinx.coroutines.launch
 import java.util.*
-import kotlin.random.Random
 
 class AddTaskActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAddTaskBinding
-    private val database by lazy { AppDatabase.getDatabase(this) }
-    private val repository by lazy { TaskRepository(database.todoDao()) }
+    private val repository by lazy {
+        val database = AppDatabase.getDatabase(this)
+        TaskRepository(database.todoDao())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,10 +35,12 @@ class AddTaskActivity : AppCompatActivity() {
 
         if (intent.hasExtra(TASK_ID)) {
             val taskId = intent.getIntExtra(TASK_ID, 0)
-            TaskDataSource.findById(taskId)?.let {
-                binding.tilTitle.text = it.title
-                binding.tilDate.text = it.date
-                binding.tilHour.text = it.hour
+            lifecycleScope.launch {
+                repository.findById(taskId).let {
+                    binding.tilTitle.text = it.todo
+                    binding.tilDate.text = it.date
+                    binding.tilHour.text = it.hour
+                }
             }
         }
 
@@ -82,15 +84,16 @@ class AddTaskActivity : AppCompatActivity() {
         }
 
         binding.btnNewTask.setOnClickListener {
-            val task = TaskEntity(
-                todo = binding.tilTitle.text,
+            val id = intent.getIntExtra(TASK_ID, 0)
+            val task = Task(
+                title = binding.tilTitle.text,
                 date = binding.tilDate.text,
                 hour = binding.tilHour.text,
-                id = intent.getIntExtra(TASK_ID, 0)
+                id = id
             )
 
             lifecycleScope.launch {
-                repository.insert(task)
+                repository.insert(task.toEntity())
             }
             setResult(Activity.RESULT_OK)
             finish()
@@ -99,10 +102,8 @@ class AddTaskActivity : AppCompatActivity() {
 
     }
 
-
     companion object {
-        const val TASK_ID = "task_id";
-        const val DATABASE_ID = "yudi"
+        const val TASK_ID = "task_id"
     }
 
 }

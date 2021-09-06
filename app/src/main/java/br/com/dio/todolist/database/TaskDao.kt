@@ -8,9 +8,12 @@ interface TaskDao {
     @Query("SELECT * FROM task")
     fun getAll(): LiveData<List<TaskEntity>>
 
-    @Insert
-    fun insertAll(vararg todo: TaskEntity)
+    @Query("select * from task where id = :id")
+    fun findById(id: Int): TaskEntity
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(vararg task: TaskEntity)
 
     @Delete
-    fun delete(todo: TaskEntity)
+    fun delete(task: TaskEntity)
 }

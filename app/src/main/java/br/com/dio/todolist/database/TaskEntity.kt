@@ -2,16 +2,17 @@ package br.com.dio.todolist.database
 
 import androidx.annotation.NonNull
 import androidx.room.*
+import br.com.dio.todolist.model.Task
 
-@Entity(tableName = "Tasks")
-data class ToDoEntity (
+@Entity(tableName = "task")
+data class TaskEntity (
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
     var id: Int = 0,
 
     @ColumnInfo(name = "todo")
     @NonNull
-    var Todo: String,
+    var todo: String,
 
     @ColumnInfo(name = "date")
     @NonNull

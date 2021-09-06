@@ -1,31 +1,27 @@
 package br.com.dio.todolist.ui
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.Observer
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.room.Room
+import androidx.lifecycle.lifecycleScope
 import br.com.dio.todolist.database.AppDatabase
-import br.com.dio.todolist.database.ToDoEntity
+import br.com.dio.todolist.database.TaskEntity
+import br.com.dio.todolist.database.TaskRepository
 import br.com.dio.todolist.databinding.ActivityMainBinding
 import br.com.dio.todolist.datasource.TaskDataSource
-import kotlinx.android.synthetic.main.activity_main.*
+import br.com.dio.todolist.extensions.toEntity
+import br.com.dio.todolist.extensions.toModel
+import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var database: AppDatabase
     private lateinit var binding: ActivityMainBinding
     private val adapter by lazy { TaskListAdapter() }
-    lateinit var todoList : LiveData<List<ToDoEntity>>
-
-
-    override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
-        return true
+    private val repository by lazy {
+        val database = AppDatabase.getDatabase(this)
+        TaskRepository(database.todoDao())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,52 +30,35 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.rvTasks.adapter = adapter
-        updateList()
+        repository.getAll().observe(this, ::updateList)
 
         insertListeners()
-        //DATA STORE
-        val appDatabase :AppDatabase = Room.databaseBuilder(this,AppDatabase::class.java,"mydb")
-            .allowMainThreadQueries()
-            .build()//ROOM
     }
 
 
     private fun insertListeners() {
         binding.fab.setOnClickListener {
-            startActivityForResult(Intent(this, AddTaskActivity::class.java), CREATE_NEW_TASK)
+            startActivity(Intent(this, AddTaskActivity::class.java))
         }
-
 
         adapter.listenerEdit = {
             val intent = Intent(this, AddTaskActivity::class.java)
             intent.putExtra(AddTaskActivity.TASK_ID, it.id)
-            startActivityForResult(intent, CREATE_NEW_TASK)
+            startActivity(intent)
         }
 
         adapter.listenerDelete = {
-            TaskDataSource.deleteTask(it)
-            updateList()
+            lifecycleScope.launch {
+                repository.delete(it.toEntity())
+            }
         }
     }
 
-
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CREATE_NEW_TASK && resultCode == Activity.RESULT_OK) updateList()
-    }
-
-    private fun updateList() {
-        val list = TaskDataSource.getList()
+    private fun updateList(list: List<TaskEntity>) {
         binding.includeEmpty.emptyState.visibility = if (list.isEmpty()) View.VISIBLE
         else View.GONE
 
-        adapter.submitList(list)
-    }
-
-
-    companion object {
-        private const val CREATE_NEW_TASK = 1000
+        adapter.submitList(list.map { it.toModel() })
     }
 
 }

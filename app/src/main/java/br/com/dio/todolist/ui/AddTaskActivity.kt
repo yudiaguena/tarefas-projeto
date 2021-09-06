@@ -3,16 +3,11 @@ package br.com.dio.todolist.ui
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.provider.SyncStateContract.Helpers.insert
-import android.text.TextUtils
-import android.widget.Button
-import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import br.com.dio.todolist.database.AppDatabase
-import br.com.dio.todolist.database.ToDoDao
-import br.com.dio.todolist.database.ToDoEntity
+import br.com.dio.todolist.database.TaskEntity
+import br.com.dio.todolist.database.TaskRepository
 import br.com.dio.todolist.databinding.ActivityAddTaskBinding
 import br.com.dio.todolist.datasource.TaskDataSource
 import br.com.dio.todolist.extensions.format
@@ -24,10 +19,13 @@ import com.google.android.material.timepicker.TimeFormat
 import kotlinx.android.synthetic.main.activity_add_task.*
 import kotlinx.coroutines.launch
 import java.util.*
+import kotlin.random.Random
 
 class AddTaskActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAddTaskBinding
+    private val database by lazy { AppDatabase.getDatabase(this) }
+    private val repository by lazy { TaskRepository(database.todoDao()) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,14 +82,16 @@ class AddTaskActivity : AppCompatActivity() {
         }
 
         binding.btnNewTask.setOnClickListener {
-            val task = Task(
-                title = binding.tilTitle.text,
+            val task = TaskEntity(
+                todo = binding.tilTitle.text,
                 date = binding.tilDate.text,
                 hour = binding.tilHour.text,
                 id = intent.getIntExtra(TASK_ID, 0)
             )
 
-            TaskDataSource.insertTask(task)
+            lifecycleScope.launch {
+                repository.insert(task)
+            }
             setResult(Activity.RESULT_OK)
             finish()
         }
